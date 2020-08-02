@@ -330,6 +330,12 @@ let mode = parseInt(document.getElementById("difficulty").value);
 grid = createGrid(modes.EASY);
 makeBombs();
 renderGrid();
+document.getElementById("reset").addEventListener('click', () => {
+    TAKEINPUT = true;
+    grid = createGrid(mode);
+    makeBombs();
+    renderGrid();
+})
 document.getElementById("difficulty").addEventListener("change", () => {
     if (parseInt(document.getElementById("difficulty").value) != mode) {
         TAKEINPUT = true;
