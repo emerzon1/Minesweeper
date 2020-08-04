@@ -82,7 +82,6 @@ document.addEventListener(
     "contextmenu",
     (e) => {
         if (TAKEINPUT) {
-            
             e.preventDefault();
             squareClickedX = Math.floor((e.x - 30) / RECT_SIZE);
             if (squareClickedX < 0 || squareClickedX > WIDTH / RECT_SIZE) {
@@ -94,16 +93,22 @@ document.addEventListener(
                 return;
             }
             if (!grid[squareClickedX][squareClickedY].seen) {
-                if(grid[squareClickedX][squareClickedY].isFlagged){
-                    BOMBS ++;
+                if (grid[squareClickedX][squareClickedY].isFlagged) {
+                    BOMBS++;
+                } else {
+                    BOMBS--;
                 }
-                else{
-                    BOMBS --;
-                }
-                grid[squareClickedX][squareClickedY].isFlagged = !(grid[squareClickedX][squareClickedY].isFlagged);
+                grid[squareClickedX][squareClickedY].isFlagged = !grid[
+                    squareClickedX
+                ][squareClickedY].isFlagged;
                 c.beginPath();
                 c.fillStyle = "white";
-                c.rect(squareClickedX*RECT_SIZE, squareClickedY*RECT_SIZE, RECT_SIZE, RECT_SIZE);
+                c.rect(
+                    squareClickedX * RECT_SIZE,
+                    squareClickedY * RECT_SIZE,
+                    RECT_SIZE,
+                    RECT_SIZE
+                );
                 c.fill();
             }
             renderGrid();
@@ -160,12 +165,29 @@ document.addEventListener("click", (e) => {
                         !children[i].isFlagged &&
                         children[i].value != values.ZERO
                     ) {
+                        c.fillStyle = "grey";
+                        c.rect(
+                            children[i].x * RECT_SIZE,
+                            children[i].y * RECT_SIZE,
+                            RECT_SIZE,
+                            RECT_SIZE
+                        );
+                        c.fill();
                         children[i].seen = true;
                     }
                 }
             }
             renderGrid();
         } else {
+            c.beginPath();
+            c.fillStyle = "grey";
+            c.rect(
+                grid[squareClickedX][squareClickedY].x * RECT_SIZE,
+                grid[squareClickedX][squareClickedY].y * RECT_SIZE,
+                RECT_SIZE,
+                RECT_SIZE
+            );
+            c.fill();
             grid[squareClickedX][squareClickedY].seen = true;
             renderGrid();
         }
@@ -291,7 +313,7 @@ const renderGrid = () => {
             }
         }
     }
-    document.getElementById('Bombs').textContent = "Bombs left: " + BOMBS;
+    document.getElementById("Bombs").textContent = "Bombs left: " + BOMBS;
 };
 const createGrid = (mode) => {
     let maxI;
@@ -330,12 +352,12 @@ let mode = parseInt(document.getElementById("difficulty").value);
 grid = createGrid(modes.EASY);
 makeBombs();
 renderGrid();
-document.getElementById("reset").addEventListener('click', () => {
+document.getElementById("reset").addEventListener("click", () => {
     TAKEINPUT = true;
     grid = createGrid(mode);
     makeBombs();
     renderGrid();
-})
+});
 document.getElementById("difficulty").addEventListener("change", () => {
     if (parseInt(document.getElementById("difficulty").value) != mode) {
         TAKEINPUT = true;
