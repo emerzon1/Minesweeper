@@ -64,7 +64,7 @@ const checkForWin = () => {
         for (let j = 0; j < grid[i].length; j++) {
             if (grid[i][j].value != values.BOMB && grid[i][j].value !== "") {
                 if (!grid[i][j].seen) {
-                    console.log(grid[i][j]);
+                    //console.log(grid[i][j]);
                     return false;
                 }
             }
@@ -78,6 +78,212 @@ const renderWin = () => {
     c.font = "60px Comic Sans MS bold";
     c.fillText("You Win!", WIDTH / 6, HEIGHT / 2);
 };
+const checkForLose = () => {
+    for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+            if (grid[i][j].value == values.BOMB && grid[i][j].seen) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+const getRandomNode = () => {
+    let res =
+        grid[Math.floor(Math.random() * (grid.length - 1))][
+            Math.floor(Math.random() * (grid[0].length - 1))
+        ];
+    //console.log(res);
+    while (res.seen || res.isFlagged) {
+        res =
+            grid[Math.floor(Math.random() * (grid.length - 1))][
+                Math.floor(Math.random() * (grid[0].length - 1))
+            ];
+        //console.log("SWITCHING");
+    }
+    console.log(res);
+    return res;
+};
+async function delay(a) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, a);
+    });
+}
+const flagSquare = (squareClickedX, squareClickedY) => {
+    if (!grid[squareClickedX][squareClickedY].seen) {
+        if (grid[squareClickedX][squareClickedY].isFlagged) {
+            BOMBS++;
+        } else {
+            BOMBS--;
+        }
+        grid[squareClickedX][squareClickedY].isFlagged = !grid[squareClickedX][
+            squareClickedY
+        ].isFlagged;
+        c.beginPath();
+        c.fillStyle = "white";
+        c.rect(
+            squareClickedX * RECT_SIZE,
+            squareClickedY * RECT_SIZE,
+            RECT_SIZE,
+            RECT_SIZE
+        );
+        c.fill();
+    }
+};
+const clickSquare = (squareClickedX, squareClickedY) => {
+    if (grid[squareClickedX][squareClickedY].isFlagged) {
+        return;
+    } else if (grid[squareClickedX][squareClickedY].value == values.BOMB) {
+        TAKEINPUT = false;
+        showAllBombs();
+        renderGrid();
+        //renderLose();
+
+        console.log("YOU LOSE");
+        return;
+    } else if (grid[squareClickedX][squareClickedY].value == values.ZERO) {
+        let queue = [];
+        queue.push(grid[squareClickedX][squareClickedY]);
+        while (queue.length > 0) {
+            curr = queue.shift();
+            c.beginPath();
+            c.fillStyle = "grey";
+            c.rect(
+                curr.x * RECT_SIZE,
+                curr.y * RECT_SIZE,
+                RECT_SIZE,
+                RECT_SIZE
+            );
+            c.fill();
+            children = findChildren(curr.x, curr.y);
+            for (let i = 0; i < children.length; i++) {
+                if (
+                    children[i].value == values.ZERO &&
+                    !children[i].seen &&
+                    !children[i].isFlagged
+                ) {
+                    queue.push(children[i]);
+                    children[i].seen = true;
+                } else if (
+                    children[i].value != values.BOMB &&
+                    !children[i].seen &&
+                    !children[i].isFlagged &&
+                    children[i].value != values.ZERO
+                ) {
+                    c.fillStyle = "grey";
+                    c.rect(
+                        children[i].x * RECT_SIZE,
+                        children[i].y * RECT_SIZE,
+                        RECT_SIZE,
+                        RECT_SIZE
+                    );
+                    c.fill();
+                    children[i].seen = true;
+                }
+            }
+        }
+        renderGrid();
+    } else {
+        c.beginPath();
+        c.fillStyle = "grey";
+        c.rect(
+            grid[squareClickedX][squareClickedY].x * RECT_SIZE,
+            grid[squareClickedX][squareClickedY].y * RECT_SIZE,
+            RECT_SIZE,
+            RECT_SIZE
+        );
+        c.fill();
+        grid[squareClickedX][squareClickedY].seen = true;
+        renderGrid();
+    }
+    if (checkForWin()) {
+        showAllBombs();
+        renderGrid();
+        renderWin();
+    }
+};
+//let SPEED = 500;
+let isClicked = false;
+const hasFlagAlready = (x, y) => {
+    let children = findChildren(x, y);
+    for (let i = 0; i < children.length; i++) {
+        if (children[i].isFlagged) {
+            return true;
+        }
+    }
+    return false;
+};
+document.getElementById("naive-ai").addEventListener("click", async () => {
+    if (!isClicked) {
+        isClicked = true;
+        TAKEINPUT = false;
+        let randNode = getRandomNode();
+        clickSquare(randNode.x, randNode.y);
+        await delay(500);
+        while (!checkForWin() && !checkForLose() && !TAKEINPUT) {
+            //let randNode = getRandomNode()
+            //clickSquare(randNode.x, randNode.y);
+            let isValidNode = false;
+            for (let i = 0; i < grid.length && !isValidNode; i++) {
+                for (let j = 0; j < grid[i].length && !isValidNode; j++) {
+                    if (grid[i][j].value == values.ONE && grid[i][j].seen) {
+                        if (hasFlagAlready(i, j)) {
+                            children = findChildren(i, j);
+                            for (let k = 0; k < children.length; k++) {
+                                if (
+                                    children[k].isFlagged == false &&
+                                    children[k].seen == false
+                                ) {
+                                    try {
+                                        clickSquare(
+                                            children[k].x,
+                                            children[k].y
+                                        );
+                                        console.log(children[k]);
+                                        children[k].seen = true;
+                                        isValidNode = true;
+                                        break;
+                                    } catch (e) {}
+                                }
+                            }
+                        } else {
+                            children = findChildren(i, j);
+                            let newFlag = null;
+                            for (let k = 0; k < children.length; k++) {
+                                if (!children[k].seen) {
+                                    if (newFlag) {
+                                        newFlag = null;
+                                        break;
+                                    }
+                                    if (newFlag === null) {
+                                        newFlag = children[k];
+                                    }
+                                }
+                            }
+                            if (newFlag) {
+                                console.log(newFlag);
+                                flagSquare(newFlag.x, newFlag.y);
+                                isValidNode = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!isValidNode) {
+                console.log("RANDOM");
+                let randNode = getRandomNode();
+                clickSquare(randNode.x, randNode.y);
+            }
+            renderGrid();
+            await delay(500);
+        }
+        isClicked = false;
+    }
+});
+
 document.addEventListener(
     "contextmenu",
     (e) => {
@@ -92,25 +298,7 @@ document.addEventListener(
             if (squareClickedY < 0 || squareClickedY > HEIGHT / RECT_SIZE) {
                 return;
             }
-            if (!grid[squareClickedX][squareClickedY].seen) {
-                if (grid[squareClickedX][squareClickedY].isFlagged) {
-                    BOMBS++;
-                } else {
-                    BOMBS--;
-                }
-                grid[squareClickedX][squareClickedY].isFlagged = !grid[
-                    squareClickedX
-                ][squareClickedY].isFlagged;
-                c.beginPath();
-                c.fillStyle = "white";
-                c.rect(
-                    squareClickedX * RECT_SIZE,
-                    squareClickedY * RECT_SIZE,
-                    RECT_SIZE,
-                    RECT_SIZE
-                );
-                c.fill();
-            }
+            flagSquare(squareClickedX, squareClickedY);
             renderGrid();
         }
     },
@@ -126,76 +314,7 @@ document.addEventListener("click", (e) => {
         if (squareClickedY < 0 || squareClickedY > HEIGHT / RECT_SIZE) {
             return;
         }
-        if (grid[squareClickedX][squareClickedY].isFlagged) {
-            return;
-        } else if (grid[squareClickedX][squareClickedY].value == values.BOMB) {
-            TAKEINPUT = false;
-            showAllBombs();
-            renderGrid();
-            //renderLose();
-
-            console.log("YOU LOSE");
-            return;
-        } else if (grid[squareClickedX][squareClickedY].value == values.ZERO) {
-            let queue = [];
-            queue.push(grid[squareClickedX][squareClickedY]);
-            while (queue.length > 0) {
-                curr = queue.shift();
-                c.beginPath();
-                c.fillStyle = "grey";
-                c.rect(
-                    curr.x * RECT_SIZE,
-                    curr.y * RECT_SIZE,
-                    RECT_SIZE,
-                    RECT_SIZE
-                );
-                c.fill();
-                children = findChildren(curr.x, curr.y);
-                for (let i = 0; i < children.length; i++) {
-                    if (
-                        children[i].value == values.ZERO &&
-                        !children[i].seen &&
-                        !children[i].isFlagged
-                    ) {
-                        queue.push(children[i]);
-                        children[i].seen = true;
-                    } else if (
-                        children[i].value != values.BOMB &&
-                        !children[i].seen &&
-                        !children[i].isFlagged &&
-                        children[i].value != values.ZERO
-                    ) {
-                        c.fillStyle = "grey";
-                        c.rect(
-                            children[i].x * RECT_SIZE,
-                            children[i].y * RECT_SIZE,
-                            RECT_SIZE,
-                            RECT_SIZE
-                        );
-                        c.fill();
-                        children[i].seen = true;
-                    }
-                }
-            }
-            renderGrid();
-        } else {
-            c.beginPath();
-            c.fillStyle = "grey";
-            c.rect(
-                grid[squareClickedX][squareClickedY].x * RECT_SIZE,
-                grid[squareClickedX][squareClickedY].y * RECT_SIZE,
-                RECT_SIZE,
-                RECT_SIZE
-            );
-            c.fill();
-            grid[squareClickedX][squareClickedY].seen = true;
-            renderGrid();
-        }
-        if (checkForWin()) {
-            showAllBombs();
-            renderGrid();
-            renderWin();
-        }
+        clickSquare(squareClickedX, squareClickedY);
     }
 });
 const colors = [
