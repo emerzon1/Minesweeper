@@ -234,8 +234,9 @@ document.getElementById("naive-ai").addEventListener("click", async () => {
                             for (let k = 0; k < children.length; k++) {
                                 if (
                                     children[k].isFlagged == false &&
-                                    children[k].seen == false
+                                    !children[k].seen
                                 ) {
+                                    console.log("UNSEEN");
                                     try {
                                         clickSquare(
                                             children[k].x,
@@ -373,7 +374,7 @@ const makeBombs = () => {
                 grid[bombX - 1][bombY + 1].value++;
             }
         } catch (error) {}
-        try {
+        try { 
             if (grid[bombX + 1][bombY - 1].value != 9) {
                 grid[bombX + 1][bombY - 1].value++;
             }
