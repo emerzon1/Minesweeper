@@ -232,14 +232,50 @@ const generateBoundaryTiles = () => {
     }
     return res;
 }
-const highlightBoundaryTiles = () => {
-    let bTiles = generateBoundaryTiles();
+const highlightBoundaryTiles = (bTiles) => {
     for(let i = 0; i < bTiles.length; i ++){
         c.beginPath();
         c.fillStyle = "yellow";
         c.rect(bTiles[i].x * RECT_SIZE, bTiles[i].y * RECT_SIZE, RECT_SIZE, RECT_SIZE);
         c.fill();
     }
+}
+const isConnected = (a, b) => {
+    if(Math.sqrt(Math.pow(Math.abs(a.x - b.x), 2) + Math.pow(Math.abs(a.y - b.y), 2)) < 2){
+        return true;
+    }
+    let aChildren = findChildren(a.x, a.y);
+    for(let i = 0; i < aChildren.length;  i ++){
+        if(aChildren[i].seen && !aChildren[i].isFlagged){
+            if(Math.sqrt(Math.pow(Math.abs(aChildren[i].x - b.x), 2) + Math.pow(Math.abs(aChildren[i].y - b.y), 2)) < 2){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+const divideBoundaryTilesIntoRegions = (tilesMaster) => {
+    let result = []
+    let tiles = [...tilesMaster];
+    while(tiles.length > 0){
+        console.log("lol");
+        let curr = [];
+        let queue = [];
+        queue.push(tiles[0]);
+        tiles.splice(0, 1);
+        while(queue.length > 0){
+            let i = queue.shift();
+            curr.push(i);
+            for(let j = 0; j < tiles.length ; j ++){
+                if(isConnected(tiles[j], i)){
+                    queue.push(tiles[j]);
+                    tiles.splice(j, 1);
+                }
+            }
+        }
+        result.push(curr);
+    }
+    return result;
 }
 document.getElementById("naive-ai").addEventListener("click", async () => {
     if (!isClicked) {
