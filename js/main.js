@@ -215,6 +215,32 @@ const hasFlagAlready = (x, y) => {
     }
     return false;
 };
+const generateBoundaryTiles = () => {
+    let res = [];
+    for(let i = 0; i < grid.length; i ++){
+        for(let j = 0; j < grid[i].length; j ++){
+            if(grid[i][j].seen == false && grid[i][j].isFlagged == false){
+                let neighbors = findChildren(grid[i][j].x, grid[i][j].y);
+                for(let k = 0; k < neighbors.length; k ++){
+                    if(neighbors[k].seen && !neighbors[k].isFlagged){
+                        res.push(grid[i][j]);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return res;
+}
+const highlightBoundaryTiles = () => {
+    let bTiles = generateBoundaryTiles();
+    for(let i = 0; i < bTiles.length; i ++){
+        c.beginPath();
+        c.fillStyle = "yellow";
+        c.rect(bTiles[i].x * RECT_SIZE, bTiles[i].y * RECT_SIZE, RECT_SIZE, RECT_SIZE);
+        c.fill();
+    }
+}
 document.getElementById("naive-ai").addEventListener("click", async () => {
     if (!isClicked) {
         isClicked = true;
@@ -233,8 +259,8 @@ document.getElementById("naive-ai").addEventListener("click", async () => {
                             children = findChildren(i, j);
                             for (let k = 0; k < children.length; k++) {
                                 if (
-                                    children[k].isFlagged == false &&
-                                    !children[k].seen
+                                    (children[k].isFlagged === false) &&
+                                    (children[k].seen === false)
                                 ) {
                                     console.log("UNSEEN");
                                     try {
@@ -272,7 +298,12 @@ document.getElementById("naive-ai").addEventListener("click", async () => {
                     }
                 }
             }
-
+            if(!isValidNode) {
+                //GoThroughPermutationsOfBoards
+                //FindOneWhereThereHasToBeABombInAllPossibilities
+                //Click all spots around bomb
+                let boundaryTiles = generateBoundaryTiles();
+            }
             if (!isValidNode) {
                 console.log("RANDOM");
                 let randNode = getRandomNode();
@@ -374,7 +405,7 @@ const makeBombs = () => {
                 grid[bombX - 1][bombY + 1].value++;
             }
         } catch (error) {}
-        try { 
+        try {
             if (grid[bombX + 1][bombY - 1].value != 9) {
                 grid[bombX + 1][bombY - 1].value++;
             }
