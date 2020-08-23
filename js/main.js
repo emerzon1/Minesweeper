@@ -309,25 +309,18 @@ const resetKnownArr = () => {
 let masterSolutionList = [];
 let solutionList = [];
 let regions = divideBoundaryTilesIntoRegions(borderTiles);
-const createSolutions = async () => {
-    borderTiles = generateBoundaryTiles();
-    regions = divideBoundaryTilesIntoRegions(borderTiles);
-    for (let i = 0; i < regions.length; i++) {
-        console.log("Region", i);
-        solutionList = [];
-        resetKnownArr();
-        await tankRecurse(regions[i], 0);
-        masterSolutionList.push(solutionList);
-    }
-};
 const createSolutionArr = (kb, kf) => {
     let res = [];
     for (let i = 0; i < kb.length; i++) {
-        if (kb[i]) {
-            res.push(true); //IS BOMB
-        } else {
-            res.push(false); //IS NOT BOMB
+        let curr = [];
+        for(let j = 0; j < kb[i].length; j ++){
+            if (kb[i]) {
+                curr.push(true); //IS BOMB
+            } else {
+                curr.push(false); //IS NOT BOMB
+            }
         }
+        res.push(curr);
     }
     return res;
 };
@@ -395,14 +388,26 @@ const isInvalid = (tiles, kb, kf) => {
         return false;
     }
 };
+const createSolutions = async () => {
+    borderTiles = generateBoundaryTiles();
+    regions = divideBoundaryTilesIntoRegions(borderTiles);
+    for (let i = 0; i < regions.length; i++) {
+        console.log("Region", i);
+        solutionList = [];
+        resetKnownArr();
+        await tankRecurse(regions[i], 0);
+        masterSolutionList.push(solutionList);
+    }
+};
 const tankRecurse = (tiles, k) => {
     console.log(knownBomb, "???");
     if (isInvalid(tiles, knownBomb, knownFree)) {
         return;
     }
-    if (k == tiles.length) {
-        let solution = createSolutionArr(knownBomb, knownFree);
-        solutionList.push(solution);
+    if (k == tiles.length - 1) {
+        let solution = createSolutionArr([...knownBomb], [...knownFree]);
+        solutionList.push([...knownBomb, ...knownFree]);
+        return;
     }
     knownBomb[tiles[k].x][tiles[k].y] = true;
     tankRecurse(tiles, k + 1);
