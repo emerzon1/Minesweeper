@@ -350,6 +350,7 @@ const countFlagsAround = (array, i, j) => {
 };
 const isInvalid = (tiles, kb, kf) => {
     let flagCount = 0;
+    
     for (let i = 0; i < kb.length; i++) {
         for (let j = 0; j < kb[i].length; j++) {
             if (kb[i][j]) {
@@ -388,25 +389,27 @@ const isInvalid = (tiles, kb, kf) => {
         return false;
     }
 };
-const createSolutions = async () => {
+const createSolutions = () => {
     borderTiles = generateBoundaryTiles();
     regions = divideBoundaryTilesIntoRegions(borderTiles);
     for (let i = 0; i < regions.length; i++) {
         console.log("Region", i);
         solutionList = [];
         resetKnownArr();
-        await tankRecurse(regions[i], 0);
+        tankRecurse(regions[i], 0);
         masterSolutionList.push(solutionList);
     }
 };
-const tankRecurse = (tiles, k) => {
-    console.log(knownBomb, "???");
-    if (isInvalid(tiles, knownBomb, knownFree)) {
+const tankRecurse = async (tiles, k) => {
+    let invalid = await isInvalid(tiles, [...knownBomb], [...knownFree]);
+    if (invalid) {
+        console.log("INVALID!");
         return;
     }
     if (k == tiles.length - 1) {
         let solution = createSolutionArr([...knownBomb], [...knownFree]);
-        solutionList.push([...knownBomb, ...knownFree]);
+        console.log([...solution])
+        solutionList.push([...solution]);
         return;
     }
     knownBomb[tiles[k].x][tiles[k].y] = true;
@@ -646,9 +649,9 @@ const createGrid = (mode) => {
     let maxI;
     let maxJ;
     if (mode == modes.EASY) {
-        maxI = 8;
-        maxJ = 8;
-        BOMBS = 10;
+        maxI = 3;
+        maxJ = 3;
+        BOMBS = 2;
     }
     if (mode == modes.MEDIUM) {
         maxI = 16;
