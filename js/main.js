@@ -217,12 +217,12 @@ const hasFlagAlready = (x, y) => {
 };
 const generateBoundaryTiles = () => {
     let res = [];
-    for(let i = 0; i < grid.length; i ++){
-        for(let j = 0; j < grid[i].length; j ++){
-            if(grid[i][j].seen == false && grid[i][j].isFlagged == false){
+    for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+            if (grid[i][j].seen == false && grid[i][j].isFlagged == false) {
                 let neighbors = findChildren(grid[i][j].x, grid[i][j].y);
-                for(let k = 0; k < neighbors.length; k ++){
-                    if(neighbors[k].seen && !neighbors[k].isFlagged){
+                for (let k = 0; k < neighbors.length; k++) {
+                    if (neighbors[k].seen && !neighbors[k].isFlagged) {
                         res.push(grid[i][j]);
                         break;
                     }
@@ -231,43 +231,57 @@ const generateBoundaryTiles = () => {
         }
     }
     return res;
-}
+};
 const highlightBoundaryTiles = (bTiles) => {
-    for(let i = 0; i < bTiles.length; i ++){
+    for (let i = 0; i < bTiles.length; i++) {
         c.beginPath();
         c.fillStyle = "yellow";
-        c.rect(bTiles[i].x * RECT_SIZE, bTiles[i].y * RECT_SIZE, RECT_SIZE, RECT_SIZE);
+        c.rect(
+            bTiles[i].x * RECT_SIZE,
+            bTiles[i].y * RECT_SIZE,
+            RECT_SIZE,
+            RECT_SIZE
+        );
         c.fill();
     }
-}
+};
 const isConnected = (a, b) => {
-    if(Math.sqrt(Math.pow(Math.abs(a.x - b.x), 2) + Math.pow(Math.abs(a.y - b.y), 2)) < 2){
+    if (
+        Math.sqrt(
+            Math.pow(Math.abs(a.x - b.x), 2) + Math.pow(Math.abs(a.y - b.y), 2)
+        ) < 2
+    ) {
         return true;
     }
     let aChildren = findChildren(a.x, a.y);
-    for(let i = 0; i < aChildren.length;  i ++){
-        if(aChildren[i].seen && !aChildren[i].isFlagged){
-            if(Math.sqrt(Math.pow(Math.abs(aChildren[i].x - b.x), 2) + Math.pow(Math.abs(aChildren[i].y - b.y), 2)) < 2){
+    for (let i = 0; i < aChildren.length; i++) {
+        if (aChildren[i].seen && !aChildren[i].isFlagged) {
+            if (
+                Math.sqrt(
+                    Math.pow(Math.abs(aChildren[i].x - b.x), 2) +
+                        Math.pow(Math.abs(aChildren[i].y - b.y), 2)
+                ) < 2
+            ) {
                 return true;
             }
         }
     }
     return false;
-}
+};
 const divideBoundaryTilesIntoRegions = (tilesMaster) => {
-    let result = []
+    let result = [];
     let tiles = [...tilesMaster];
-    while(tiles.length > 0){
+    while (tiles.length > 0) {
         console.log("lol");
         let curr = [];
         let queue = [];
         queue.push(tiles[0]);
         tiles.splice(0, 1);
-        while(queue.length > 0){
+        while (queue.length > 0) {
             let i = queue.shift();
             curr.push(i);
-            for(let j = 0; j < tiles.length ; j ++){
-                if(isConnected(tiles[j], i)){
+            for (let j = 0; j < tiles.length; j++) {
+                if (isConnected(tiles[j], i)) {
                     queue.push(tiles[j]);
                     tiles.splice(j, 1);
                 }
@@ -276,7 +290,128 @@ const divideBoundaryTilesIntoRegions = (tilesMaster) => {
         result.push(curr);
     }
     return result;
-}
+};
+let knownBomb = [];
+let knownFree = [];
+let borderTiles = generateBoundaryTiles();
+const resetKnownArr = () => {
+    knownBomb = [];
+    knownFree = [];
+    for (let i = 0; i < grid.length; i++) {
+        let curr = [];
+        for (let j = 0; j < grid[i].length; j++) {
+            curr.push(false);
+        }
+        knownBomb.push(curr);
+        knownFree.push(curr);
+    }
+};
+let masterSolutionList = [];
+let solutionList = [];
+let regions = divideBoundaryTilesIntoRegions(borderTiles);
+const createSolutions = async () => {
+    borderTiles = generateBoundaryTiles();
+    regions = divideBoundaryTilesIntoRegions(borderTiles);
+    for (let i = 0; i < regions.length; i++) {
+        console.log("Region", i);
+        solutionList = [];
+        resetKnownArr();
+        await tankRecurse(regions[i], 0);
+        masterSolutionList.push(solutionList);
+    }
+};
+const createSolutionArr = (kb, kf) => {
+    let res = [];
+    for (let i = 0; i < kb.length; i++) {
+        if (kb[i]) {
+            res.push(true); //IS BOMB
+        } else {
+            res.push(false); //IS NOT BOMB
+        }
+    }
+    return res;
+};
+const countFlagsAround = (array, i, j) => {
+    let mines = 0;
+
+    // See if we're on the edge of the board
+    let oU = false,
+        oD = false,
+        oL = false,
+        oR = false;
+    if (i == 0) oU = true;
+    if (j == 0) oL = true;
+    if (i == grid.length - 1) oD = true;
+    if (j == grid[0].length - 1) oR = true;
+
+    if (!oU && array[i - 1][j]) mines++;
+    if (!oL && array[i][j - 1]) mines++;
+    if (!oD && array[i + 1][j]) mines++;
+    if (!oR && array[i][j + 1]) mines++;
+    if (!oU && !oL && array[i - 1][j - 1]) mines++;
+    if (!oU && !oR && array[i - 1][j + 1]) mines++;
+    if (!oD && !oL && array[i + 1][j - 1]) mines++;
+    if (!oD && !oR && array[i + 1][j + 1]) mines++;
+
+    return mines;
+};
+const isInvalid = (tiles, kb, kf) => {
+    let flagCount = 0;
+    for (let i = 0; i < kb.length; i++) {
+        for (let j = 0; j < kb[i].length; j++) {
+            if (kb[i][j]) {
+                flagCount++;
+            }
+            let num = grid[i][j].value;
+            if(!num.seen){
+                continue;
+            }
+            let surround = 0;
+            if (
+                (i == 0 && j == 0) ||
+                (i == kb.length - 1 && j == kb[i].length - 1)
+            ) {
+                surround = 3;
+            } else if (
+                i == 0 ||
+                j == 0 ||
+                i == kb.length - 1 ||
+                j == kb[i].length - 1
+            ) {
+                surround = 5;
+            } else {
+                surround = 8;
+            }
+
+            let numFlags = countFlagsAround(kb, i, j);
+            let numFree = countFlagsAround(kf, i, j);
+
+            if (numFlags > num) return true;
+            if (surround - numFree < num) return true;
+        }
+        if (flagCount > BOMBS) {
+            return true;
+        }
+        return false;
+    }
+};
+const tankRecurse = (tiles, k) => {
+    console.log(knownBomb, "???");
+    if (isInvalid(tiles, knownBomb, knownFree)) {
+        return;
+    }
+    if (k == tiles.length) {
+        let solution = createSolutionArr(knownBomb, knownFree);
+        solutionList.push(solution);
+    }
+    knownBomb[tiles[k].x][tiles[k].y] = true;
+    tankRecurse(tiles, k + 1);
+    knownBomb[tiles[k].x][tiles[k].y] = false;
+
+    knownFree[tiles[k].x][tiles[k].y] = true;
+    tankRecurse(tiles, k + 1);
+    knownFree[tiles[k].x][tiles[k].y] = false;
+};
 document.getElementById("naive-ai").addEventListener("click", async () => {
     if (!isClicked) {
         isClicked = true;
@@ -295,8 +430,8 @@ document.getElementById("naive-ai").addEventListener("click", async () => {
                             children = findChildren(i, j);
                             for (let k = 0; k < children.length; k++) {
                                 if (
-                                    (children[k].isFlagged === false) &&
-                                    (children[k].seen === false)
+                                    children[k].isFlagged === false &&
+                                    children[k].seen === false
                                 ) {
                                     console.log("UNSEEN");
                                     try {
@@ -334,7 +469,7 @@ document.getElementById("naive-ai").addEventListener("click", async () => {
                     }
                 }
             }
-            if(!isValidNode) {
+            if (!isValidNode) {
                 //GoThroughPermutationsOfBoards
                 //FindOneWhereThereHasToBeABombInAllPossibilities
                 //Click all spots around bomb
