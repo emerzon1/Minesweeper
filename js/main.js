@@ -313,8 +313,8 @@ const createSolutionArr = (kb, kf) => {
     let res = [];
     for (let i = 0; i < kb.length; i++) {
         let curr = [];
-        for(let j = 0; j < kb[i].length; j ++){
-            if (kb[i]) {
+        for (let j = 0; j < kb[i].length; j++) {
+            if (kb[i][j]) {
                 curr.push(true); //IS BOMB
             } else {
                 curr.push(false); //IS NOT BOMB
@@ -350,14 +350,14 @@ const countFlagsAround = (array, i, j) => {
 };
 const isInvalid = (tiles, kb, kf) => {
     let flagCount = 0;
-    
+
     for (let i = 0; i < kb.length; i++) {
         for (let j = 0; j < kb[i].length; j++) {
             if (kb[i][j]) {
                 flagCount++;
             }
             let num = grid[i][j].value;
-            if(!num.seen){
+            if (!num.seen) {
                 continue;
             }
             let surround = 0;
@@ -392,31 +392,83 @@ const isInvalid = (tiles, kb, kf) => {
 const createSolutions = () => {
     borderTiles = generateBoundaryTiles();
     regions = divideBoundaryTilesIntoRegions(borderTiles);
+    resetKnownArr();
     for (let i = 0; i < regions.length; i++) {
         console.log("Region", i);
         solutionList = [];
-        resetKnownArr();
+        //resetKnownArr();
         tankRecurse(regions[i], 0);
+        console.log("FINISHED!");
         masterSolutionList.push(solutionList);
     }
 };
+
 const tankRecurse = async (tiles, k) => {
-    let invalid = await isInvalid(tiles, [...knownBomb], [...knownFree]);
-    if (invalid) {
-        console.log("INVALID!");
-        return;
-    }
-    if (k == tiles.length - 1) {
+    if (k == tiles.length) {
+        console.log("COMPLETED");
         let solution = createSolutionArr([...knownBomb], [...knownFree]);
-        console.log([...solution])
-        solutionList.push([...solution]);
-        return;
+        console.log([...solution]);
+        solutionList.push([[...knownBomb], [...knownFree]]);
+        return true;
     }
+    let flagCount = 0;
+
+    for (let i = 0; i < knownBomb.length; i++) {
+        for (let j = 0; j < knownBomb[i].length; j++) {
+            if (knownBomb[i][j]) {
+                flagCount++;
+            }
+            let num = grid[i][j].value;
+            if (!num.seen) {
+                continue;
+            }
+            let surround = 0;
+            if (
+                (i == 0 && j == 0) ||
+                (i == knownBomb.length - 1 && j == knownBomb[i].length - 1)
+            ) {
+                surround = 3;
+            } else if (
+                i == 0 ||
+                j == 0 ||
+                i == knownBomb.length - 1 ||
+                j == knownBomb[i].length - 1
+            ) {
+                surround = 5;
+            } else {
+                surround = 8;
+            }
+
+            let numFlags = countFlagsAround(knownBomb, i, j);
+            //let numFree = countFlagsAround(knownFree, i, j);
+
+            if (numFlags > num) {
+                console.log("INVALID!");
+                return;
+            }
+            /*if (surround - numFree < num) {
+                console.log("INVALID!");
+                return;
+            }*/
+        }
+        console.log(flagCount);
+        if (flagCount > BOMBS) {
+            console.log("INVALID!");
+            return;
+        }
+        
+    }
+    console.log("VALID");
+    
+    console.log("OUT" + k);
     knownBomb[tiles[k].x][tiles[k].y] = true;
+    console.log("KnownBomb: " + knownBomb);
     tankRecurse(tiles, k + 1);
+    console.log("hello");
     knownBomb[tiles[k].x][tiles[k].y] = false;
 
     knownFree[tiles[k].x][tiles[k].y] = true;
+    console.log("HERE");
     tankRecurse(tiles, k + 1);
     knownFree[tiles[k].x][tiles[k].y] = false;
 };
