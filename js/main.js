@@ -392,6 +392,7 @@ const isInvalid = (tiles, kb, kf) => {
 const createSolutions = () => {
     borderTiles = generateBoundaryTiles();
     regions = divideBoundaryTilesIntoRegions(borderTiles);
+    console.log(regions);
     resetKnownArr();
     for (let i = 0; i < regions.length; i++) {
         console.log("Region", i);
@@ -404,13 +405,7 @@ const createSolutions = () => {
 };
 
 const tankRecurse = async (tiles, k) => {
-    if (k == tiles.length) {
-        console.log("COMPLETED");
-        let solution = createSolutionArr([...knownBomb], [...knownFree]);
-        console.log([...solution]);
-        solutionList.push([[...knownBomb], [...knownFree]]);
-        return true;
-    }
+    
     let flagCount = 0;
 
     for (let i = 0; i < knownBomb.length; i++) {
@@ -419,7 +414,10 @@ const tankRecurse = async (tiles, k) => {
                 flagCount++;
             }
             let num = grid[i][j].value;
-            if (!num.seen) {
+            if(num == ""){
+                num = 0;
+            }
+            if (!grid[i][j].seen) {
                 continue;
             }
             let surround = 0;
@@ -443,7 +441,7 @@ const tankRecurse = async (tiles, k) => {
             //let numFree = countFlagsAround(knownFree, i, j);
 
             if (numFlags > num) {
-                console.log("INVALID!");
+                console.log("INVALID!" + numFlags + " " + i + " " + j);
                 return;
             }
             /*if (surround - numFree < num) {
@@ -451,24 +449,29 @@ const tankRecurse = async (tiles, k) => {
                 return;
             }*/
         }
-        console.log(flagCount);
+        console.log("FlagCount: " + flagCount);
         if (flagCount > BOMBS) {
             console.log("INVALID!");
             return;
         }
         
     }
-    console.log("VALID");
+    if (k == tiles.length) {
+        console.log("COMPLETED");
+        let solution = createSolutionArr([...knownBomb], [...knownFree]);
+        console.log("knownBomb: " + [...knownBomb])
+        console.log([...solution]);
+        solutionList.push([...solution]);
+        return true;
+    }
     
-    console.log("OUT" + k);
     knownBomb[tiles[k].x][tiles[k].y] = true;
     console.log("KnownBomb: " + knownBomb);
     tankRecurse(tiles, k + 1);
-    console.log("hello");
     knownBomb[tiles[k].x][tiles[k].y] = false;
 
+    //tankRecurse(tiles, k + 1);
     knownFree[tiles[k].x][tiles[k].y] = true;
-    console.log("HERE");
     tankRecurse(tiles, k + 1);
     knownFree[tiles[k].x][tiles[k].y] = false;
 };
